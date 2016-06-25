@@ -42,6 +42,12 @@
     <description>Cartesian Twist Controller</description>
   </class>
 
+  <class name="robot_controllers/TorqueController"
+         type="robot_controllers::TorqueController"
+         base_class_type="robot_controllers::Controller">
+    <description>Torque Controller</description>
+  </class>
+
   <class name="robot_controllers/ParallelGripperController"
          type="robot_controllers::ParallelGripperController"
          base_class_type="robot_controllers::Controller">

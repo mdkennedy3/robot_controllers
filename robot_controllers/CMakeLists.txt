@@ -75,6 +75,7 @@ add_library(robot_controllers
   src/diff_drive_limiter.cpp
   src/follow_joint_trajectory.cpp
   src/gravity_compensation.cpp
+  src/torque.cpp
   src/parallel_gripper.cpp
   src/pid.cpp
   src/point_head.cpp
