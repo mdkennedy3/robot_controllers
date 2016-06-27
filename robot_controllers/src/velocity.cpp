@@ -40,21 +40,21 @@
  */
 
 #include <pluginlib/class_list_macros.h>
-#include <robot_controllers/torque.h>
+#include <robot_controllers/velocity.h>
 
 #include <urdf/model.h>
 
-PLUGINLIB_EXPORT_CLASS(robot_controllers::TorqueController, robot_controllers::Controller)
+PLUGINLIB_EXPORT_CLASS(robot_controllers::VelocityController, robot_controllers::Controller)
 
 namespace robot_controllers
 {
 
-TorqueController::TorqueController() :
+VelocityController::VelocityController() :
   initialized_(false)
 {
 }
 
-int TorqueController::init(ros::NodeHandle& nh, ControllerManager* manager)
+int VelocityController::init(ros::NodeHandle& nh, ControllerManager* manager)
 {
   // We absolutely need access to the controller manager
   if (!manager)
@@ -88,7 +88,7 @@ int TorqueController::init(ros::NodeHandle& nh, ControllerManager* manager)
       return -1;
     }
     joint_names_.push_back(static_cast<std::string>(name_value));
-    ROS_INFO_STREAM_NAMED("TorqueController", "Joint " << i << " " << joint_names_.back());
+    ROS_INFO_STREAM_NAMED("VelocityController", "Joint " << i << " " << joint_names_.back());
 
   }
   size_t num_joints = joint_names_.size();
@@ -115,21 +115,21 @@ int TorqueController::init(ros::NodeHandle& nh, ControllerManager* manager)
 
   // Subscribe to command
   command_sub_ = nh.subscribe<trajectory_msgs::JointTrajectory>("command", 1,
-                    boost::bind(&TorqueController::command, this, _1));
+                    boost::bind(&VelocityController::command, this, _1));
   last_command_time_ = ros::Time(0);
 
   initialized_ = true;
 
-  ROS_INFO_STREAM_NAMED("TorqueController", "Inited TorqueController " << getName());
+  ROS_INFO_STREAM_NAMED("VelocityController", "Inited VelocityController " << getName());
 
   return 0;
 }
 
-bool TorqueController::start()
+bool VelocityController::start()
 {
   if (!initialized_)
   {
-    ROS_ERROR_NAMED("TorqueController",
+    ROS_ERROR_NAMED("VelocityController",
                     "Unable to start, not initialized.");
     return false;
   }
@@ -137,18 +137,18 @@ bool TorqueController::start()
   return true;
 }
 
-bool TorqueController::stop(bool force)
+bool VelocityController::stop(bool force)
 {
   return true;
 }
 
-bool TorqueController::reset()
+bool VelocityController::reset()
 {
   // Simply stop
   return (manager_->requestStop(getName()) == 0);
 }
 
-void TorqueController::update(const ros::Time& now, const ros::Duration& dt)
+void VelocityController::update(const ros::Time& now, const ros::Duration& dt)
 {
   if (!initialized_)
     return;  // Should never really hit this
@@ -164,7 +164,7 @@ void TorqueController::update(const ros::Time& now, const ros::Duration& dt)
 
   size_t num_joints = joints_.size();
 
-  if (0) ROS_INFO_STREAM_NAMED("TorqueController", "TorqueController update " << now << " " << last_command_time);
+  if (0) ROS_INFO_STREAM_NAMED("VelocityController", "VelocityController update " << now << " " << last_command_time);
 
   if ((now - last_command_time) > ros::Duration(0.5))
   {
@@ -177,13 +177,15 @@ void TorqueController::update(const ros::Time& now, const ros::Duration& dt)
       smoothed_efforts_[i] += (0 - smoothed_efforts_[i]) * dt.toSec()/0.05;
     }
   }
-
-  for (size_t i = 0; i < num_joints; ++i)
+  else
   {
-    smoothed_efforts_[i] += (command_efforts[i] - smoothed_efforts_[i]) * dt.toSec()/0.05;
+    for (size_t i = 0; i < num_joints; ++i)
+    {
+      smoothed_efforts_[i] += (command_efforts[i] - smoothed_efforts_[i]) * dt.toSec()/0.05;
+    }
   }
   if (num_joints == 7) {
-    if (1) ROS_INFO_STREAM_NAMED("TorqueController", "TorqueController setVelocity " <<
+    if (1) ROS_INFO_STREAM_NAMED("VelocityController", "VelocityController setVelocity " <<
       smoothed_efforts_[0] << " " <<
       smoothed_efforts_[1] << " " <<
       smoothed_efforts_[2] << " " <<
@@ -198,19 +200,19 @@ void TorqueController::update(const ros::Time& now, const ros::Duration& dt)
   }
 }
 
-void TorqueController::command(const trajectory_msgs::JointTrajectory::ConstPtr& goal)
+void VelocityController::command(const trajectory_msgs::JointTrajectory::ConstPtr& goal)
 {
   // Need to initialize KDL structs
   if (!initialized_)
   {
-    ROS_ERROR("TorqueController: Cannot accept goal, controller is not initialized.");
+    ROS_ERROR("VelocityController: Cannot accept goal, controller is not initialized.");
     return;
   }
 
   if (goal->points.empty())
   {
     // Stop
-    ROS_INFO_STREAM_NAMED("TorqueController", "TorqueController no points");
+    ROS_INFO_STREAM_NAMED("VelocityController", "VelocityController no points");
     manager_->requestStop(getName());
     return;
   }
@@ -244,7 +246,7 @@ void TorqueController::command(const trajectory_msgs::JointTrajectory::ConstPtr&
   std::vector<double> command_efforts(num_joints, 0.0);
   for (size_t j = 0; j < num_joints; ++j)
   {
-    if (0) ROS_INFO_STREAM_NAMED("TorqueController", "TorqueController point " << j << "->" << mapping[j]);
+    if (0) ROS_INFO_STREAM_NAMED("VelocityController", "VelocityController point " << j << "->" << mapping[j]);
 
     if (mapping[j] != std::string::npos) {
       double effort = goal->points[0].effort[mapping[j]];
@@ -263,17 +265,17 @@ void TorqueController::command(const trajectory_msgs::JointTrajectory::ConstPtr&
   // Try to start up
   if (manager_->requestStart(getName()) != 0)
   {
-    ROS_ERROR("TorqueController: Cannot start, blocked by another controller.");
+    ROS_ERROR("VelocityController: Cannot start, blocked by another controller.");
     return;
   }
 }
 
-std::vector<std::string> TorqueController::getCommandedNames()
+std::vector<std::string> VelocityController::getCommandedNames()
 {
   return joint_names_;
 }
 
-std::vector<std::string> TorqueController::getClaimedNames()
+std::vector<std::string> VelocityController::getClaimedNames()
 {
   return getCommandedNames();
 }

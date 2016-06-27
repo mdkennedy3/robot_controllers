@@ -42,10 +42,22 @@
     <description>Cartesian Twist Controller</description>
   </class>
 
-  <class name="robot_controllers/TorqueController"
-         type="robot_controllers::TorqueController"
+  <class name="robot_controllers/VelocityController"
+         type="robot_controllers::VelocityController"
          base_class_type="robot_controllers::Controller">
-    <description>Torque Controller</description>
+    <description>Velocity Controller</description>
+  </class>
+
+  <class name="robot_controllers/WeightlessTorqueController"
+         type="robot_controllers::WeightlessTorqueController"
+         base_class_type="robot_controllers::Controller">
+    <description>Weightless Torque Controller</description>
+  </class>
+
+  <class name="robot_controllers/VelocityController"
+         type="robot_controllers::VelocityController"
+         base_class_type="robot_controllers::Controller">
+    <description>Velocity Controller</description>
   </class>
 
   <class name="robot_controllers/ParallelGripperController"

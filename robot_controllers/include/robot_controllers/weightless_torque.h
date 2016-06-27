@@ -1,9 +1,8 @@
 /*********************************************************************
- *  Software License Agreement (BSD License)
+ * Software License Agreement (BSD License)
  *
  *  Copyright (c) 2014, Fetch Robotics Inc.
  *  Copyright (c) 2013, Unbounded Robotics Inc.
- *  Copyright (c) 2008, Willow Garage, Inc.
  *  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
@@ -34,13 +33,10 @@
  *  POSSIBILITY OF SUCH DAMAGE.
  *********************************************************************/
 
-/*
- * Derived a bit from pr2_controllers/cartesian_pose_controller.cpp
- * Author: Michael Ferguson, Wim Meeussen
- */
+// Author: Michael Ferguson
 
-#ifndef ROBOT_CONTROLLERS_TORQUE_H
-#define ROBOT_CONTROLLERS_TORQUE_H
+#ifndef ROBOT_CONTROLLERS_WEIGHTLESS_TORQUE_H_
+#define ROBOT_CONTROLLERS_WEIGHTLESS_TORQUE_H_
 
 #include <string>
 #include <vector>
@@ -48,25 +44,33 @@
 
 #include <ros/ros.h>
 #include <robot_controllers_interface/controller.h>
-#include <robot_controllers_interface/joint_handle.h>
 #include <robot_controllers_interface/controller_manager.h>
+#include <robot_controllers_interface/joint_handle.h>
 
-#include <geometry_msgs/PoseStamped.h>
-#include <geometry_msgs/Twist.h>
+#include <trajectory_msgs/JointTrajectory.h>
 
-#include <tf/transform_datatypes.h>
-#include <tf/transform_listener.h>
+#include <urdf/model.h>
+#include <kdl_parser/kdl_parser.hpp>
 
-#include <robot_controllers/trajectory_spline_sampler.h>
+#include <kdl/tree.hpp>
+#include <kdl/chain.hpp>
+#include <kdl/jntarray.hpp>
+#include <kdl/jntarrayvel.hpp>
+#include <kdl/chaindynparam.hpp>
 
 namespace robot_controllers
 {
 
-class TorqueController : public Controller
+/**
+ *  @class WeightlessTorqueController
+ *  @brief Controller which uses KDL to compute torque needed for static
+ *         holding of the chain at the current pose.
+ */
+class WeightlessTorqueController : public Controller
 {
 public:
-  TorqueController();
-  virtual ~TorqueController() {}
+  WeightlessTorqueController() : initialized_(false) {}
+  virtual ~WeightlessTorqueController() {}
 
   /**
    * @brief Initialize the controller and any required data structures.
@@ -85,13 +89,16 @@ public:
   virtual bool start();
 
   /**
-   * @brief Attempt to stop the controller. This should be called only by the
-   *        ControllerManager instance.
-   * @param force Should we force the controller to stop? Some controllers
-   *        may wish to continue running until they absolutely have to stop.
-   * @returns True if successfully stopped, false otherwise.
+   *  @brief Stop this controller.
+   *  @param force If true, this controller will be stopped regardless
+   *         of return value.
+   *  @returns true if controller preempted successfully.
    */
-  virtual bool stop(bool force);
+  virtual bool stop(bool force)
+  {
+    // always allow preemption
+    return true;
+  }
 
   /**
    * @brief Cleanly reset the controller to it's initial state. Some controllers
@@ -99,19 +106,23 @@ public:
    *        the robot exiting some fault condition.
    * @returns True if successfully reset, false otherwise.
    */
-  virtual bool reset();
+  virtual bool reset()
+  {
+    // Do nothing
+    return true;
+  }
 
   /**
    * @brief This is the update loop for the controller.
    * @param time The system time.
    * @param dt The timestep since last call to update.
    */
-  virtual void update(const ros::Time& now, const ros::Duration& dt);
+  virtual void update(const ros::Time& time, const ros::Duration& dt);
 
   /** @brief Get the type of this controller. */
   virtual std::string getType()
   {
-    return "robot_controllers/TorqueController";
+    return "robot_controllers/WeightlessTorqueController";
   }
 
   /** @brief Get the names of joints/controllers which this controller commands. */
@@ -124,27 +135,28 @@ public:
   void command(const trajectory_msgs::JointTrajectory::ConstPtr& goal);
 
 private:
-
-  bool initialized_;
   ControllerManager* manager_;
+  std::vector<JointHandlePtr> joints_;
 
-  bool enabled_;
+  bool initialized_;  /// is KDL structure setup
 
-  ros::Publisher feedback_pub_;
   ros::Subscriber command_sub_;
 
-  std::vector<std::string> joint_names_;
-  std::vector<JointHandlePtr> joints_;
-  std::vector<bool> continuous_;
+  KDL::Chain kdl_chain_;
+  KDL::JntArrayVel positions_;
+  boost::shared_ptr<KDL::ChainDynParam> kdl_chain_dynamics_;
 
+  std::vector<std::string> joint_names_;
+  std::vector<bool> continuous_;
   boost::mutex mutex_;
 
   std::vector<double> command_efforts_;
   std::vector<double> smoothed_efforts_;
 
   ros::Time last_command_time_;
+  double gravity_compensation_factor_;
 };
 
 }  // namespace robot_controllers
 
-#endif  // ROBOT_CONTROLLERS_TORQUE_H
+#endif  // ROBOT_CONTROLLERS_WEIGHTLESS_TORQUE_H_
