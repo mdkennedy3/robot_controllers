@@ -179,17 +179,6 @@ void WeightlessTorqueController::update(const ros::Time& now, const ros::Duratio
     }
   }
 
-  if (command_active && num_joints == 7) {
-    if (1) ROS_INFO_STREAM_NAMED("WeightlessTorqueController", "WeightlessTorqueController setEffort " <<
-      torques.data[0] << "+" << smoothed_efforts_[0] << " " <<
-      torques.data[1] << "+" << smoothed_efforts_[1] << " " <<
-      torques.data[2] << "+" << smoothed_efforts_[2] << " " <<
-      torques.data[3] << "+" << smoothed_efforts_[3] << " " <<
-      torques.data[4] << "+" << smoothed_efforts_[4] << " " <<
-      torques.data[5] << "+" << smoothed_efforts_[5] << " " <<
-      torques.data[6] << "+" << smoothed_efforts_[6]);
-  }
-
   // Update effort command
   for (size_t i = 0; i < num_joints; ++i)
   {
@@ -242,7 +231,6 @@ void WeightlessTorqueController::command(const trajectory_msgs::JointTrajectory:
       break;
     }
   }
-
 
   std::vector<double> command_efforts(num_joints, 0.0);
   for (size_t j = 0; j < num_joints; ++j)
