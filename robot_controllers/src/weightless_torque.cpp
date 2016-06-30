@@ -235,7 +235,7 @@ void WeightlessTorqueController::command(const trajectory_msgs::JointTrajectory:
   std::vector<double> command_efforts(num_joints, 0.0);
   for (size_t j = 0; j < num_joints; ++j)
   {
-    if (0) ROS_INFO_STREAM_NAMED("TorqueController", "TorqueController point " << j << "->" << mapping[j]);
+    if (0) ROS_INFO_STREAM_NAMED("WeightlessTorqueController", "WeightlessTorqueController point " << j << "->" << mapping[j]);
 
     if (mapping[j] != std::string::npos)
     {
@@ -255,7 +255,7 @@ void WeightlessTorqueController::command(const trajectory_msgs::JointTrajectory:
   // Try to start up
   if (manager_->requestStart(getName()) != 0)
   {
-    ROS_ERROR("TorqueController: Cannot start, blocked by another controller.");
+    ROS_ERROR("WeightlessTorqueController: Cannot start, blocked by another controller.");
     return;
   }
 }
