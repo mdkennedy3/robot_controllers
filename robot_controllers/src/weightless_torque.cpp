@@ -85,9 +85,10 @@ int WeightlessTorqueController::init(ros::NodeHandle& nh, ControllerManager* man
   joints_.clear();
   for (size_t i = 0; i < kdl_chain_.getNrOfSegments(); ++i)
   {
-    if (kdl_chain_.getSegment(i).getJoint().getType() != KDL::Joint::None)
+    KDL::Joint joint = kdl_chain_.getSegment(i).getJoint();
+    if (joint.getType() != KDL::Joint::None)
     {
-      joint_names_.push_back(kdl_chain_.getSegment(i).getJoint().getName());
+      joint_names_.push_back(joint.getName());
     }
     else
     {
@@ -99,6 +100,59 @@ int WeightlessTorqueController::init(ros::NodeHandle& nh, ControllerManager* man
   for (size_t i = 0; i < num_joints; i++) {
     joints_.push_back(manager_->getJointHandle(joint_names_[i]));
   }
+
+  limits_lo_.resize(num_joints, 0.0);
+  limits_hi_.resize(num_joints, 0.0);
+  limits_gain_.resize(num_joints, 0.0);
+
+  XmlRpc::XmlRpcValue limits;
+  if (!nh.getParam("limits", limits))
+  {
+    ROS_ERROR_STREAM("No limits given for " << nh.getNamespace());
+    return -1;
+  }
+  if (limits.getType() != XmlRpc::XmlRpcValue::TypeArray)
+  {
+    ROS_ERROR_STREAM("Limits not in a list for " << nh.getNamespace());
+    return -1;
+  }
+  for (int i = 0; i < limits.size(); ++i)
+  {
+    XmlRpc::XmlRpcValue &limit_value = limits[i];
+
+    if (limit_value.getType() != XmlRpc::XmlRpcValue::TypeStruct)
+    {
+      ROS_ERROR_STREAM("Joint limit not a struct for " << nh.getNamespace());
+      return -1;
+    }
+
+    XmlRpc::XmlRpcValue limit_name_value = limit_value["name"];
+    XmlRpc::XmlRpcValue limit_lo_value = limit_value["lo"];
+    XmlRpc::XmlRpcValue limit_hi_value = limit_value["hi"];
+    XmlRpc::XmlRpcValue limit_gain_value = limit_value["gain"];
+
+    if (limit_name_value.getType() != XmlRpc::XmlRpcValue::TypeString ||
+        limit_lo_value.getType() != XmlRpc::XmlRpcValue::TypeDouble ||
+        limit_hi_value.getType() != XmlRpc::XmlRpcValue::TypeDouble ||
+        limit_gain_value.getType() != XmlRpc::XmlRpcValue::TypeDouble) {
+          ROS_ERROR_STREAM("Joint limit values not doubles " << nh.getNamespace());
+          return -1;
+    }
+
+    std::vector<std::string>::iterator jnptr = std::find(joint_names_.begin(), joint_names_.end(), (std::string)limit_name_value);
+    if (jnptr == joint_names_.end()) {
+      ROS_ERROR_STREAM("Joint limit name " << (std::string)limit_name_value << " not found in " << nh.getNamespace());
+      return -1;
+    }
+
+    ssize_t ji = jnptr - joint_names_.begin();
+    limits_lo_[ji] = (double)limit_lo_value;
+    limits_hi_[ji] = (double)limit_hi_value;
+    limits_gain_[ji] = (double)limit_gain_value;
+
+    ROS_INFO_STREAM_NAMED("VelocityController", "Joint " << ji << " limits: " << limits_lo_[ji] << "-" << limits_hi_[ji] << " x " << limits_gain_[ji]);
+  }
+
 
   command_efforts_.clear();
   smoothed_efforts_.clear();
@@ -182,7 +236,13 @@ void WeightlessTorqueController::update(const ros::Time& now, const ros::Duratio
   // Update effort command
   for (size_t i = 0; i < num_joints; ++i)
   {
-    joints_[i]->setEffort(torques.data[i] * gravity_compensation_factor_ + smoothed_efforts_[i]);
+    double effort = torques.data[i] * gravity_compensation_factor_ + smoothed_efforts_[i];
+    if (limits_gain_[i] > 0.0) {
+      double pos = joints_[i]->getPosition();
+      effort = std::min(effort, limits_gain_[i] * (limits_hi_[i] - pos));
+      effort = std::max(effort, limits_gain_[i] * (limits_lo_[i] - pos));
+    }
+    joints_[i]->setEffort(effort);
   }
 }
 

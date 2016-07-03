@@ -150,6 +150,10 @@ private:
   std::vector<bool> continuous_;
   boost::mutex mutex_;
 
+  std::vector<double> limits_lo_;
+  std::vector<double> limits_hi_;
+  std::vector<double> limits_gain_;
+
   std::vector<double> command_efforts_;
   std::vector<double> smoothed_efforts_;
 
