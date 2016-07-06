@@ -54,12 +54,6 @@
     <description>Weightless Torque Controller</description>
   </class>
 
-  <class name="robot_controllers/VelocityController"
-         type="robot_controllers::VelocityController"
-         base_class_type="robot_controllers::Controller">
-    <description>Velocity Controller</description>
-  </class>
-
   <class name="robot_controllers/ParallelGripperController"
          type="robot_controllers::ParallelGripperController"
          base_class_type="robot_controllers::Controller">
