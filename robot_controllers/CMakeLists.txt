@@ -78,6 +78,8 @@ add_library(robot_controllers
   src/pid.cpp
   src/point_head.cpp
   src/scaled_mimic.cpp
+  src/velocity.cpp
+  src/weightless_torque.cpp
 )
 target_link_libraries(robot_controllers
   ${catkin_LIBRARIES}
