@@ -48,6 +48,12 @@
     <description>Velocity Controller</description>
   </class>
 
+  <class name="robot_controllers/PositionController"
+         type="robot_controllers::PositionController"
+         base_class_type="robot_controllers::Controller">
+    <description>Position Controller</description>
+  </class>
+
   <class name="robot_controllers/WeightlessTorqueController"
          type="robot_controllers::WeightlessTorqueController"
          base_class_type="robot_controllers::Controller">

@@ -73,6 +73,7 @@ add_library(robot_controllers
   src/point_head.cpp
   src/scaled_mimic.cpp
   src/velocity.cpp
+  src/position.cpp
   src/weightless_torque.cpp
 )
 target_link_libraries(robot_controllers
