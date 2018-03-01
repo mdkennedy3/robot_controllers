@@ -74,4 +74,21 @@
                  (mainly for simulation)</description>
   </class>
 
+  <class name="robot_controllers/TorqueControllerArm"
+         type="robot_controllers::TorqueControllerArm"
+         base_class_type="robot_controllers::Controller">
+    <description>Arm Torque Controller</description>
+  </class>
+
+  <class name="robot_controllers/TorqueControllerBase"
+         type="robot_controllers::TorqueControllerBase"
+         base_class_type="robot_controllers::Controller">
+    <description>Base Torque Controller</description>
+  </class>
+
+  <class name="robot_controllers/TorqueControllerArmBase"
+         type="robot_controllers::TorqueControllerArmBase"
+         base_class_type="robot_controllers::Controller">
+    <description>Arm and Base Torque Controller</description>
+  </class>
 </library>

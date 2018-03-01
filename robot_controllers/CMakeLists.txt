@@ -75,6 +75,9 @@ add_library(robot_controllers
   src/velocity.cpp
   src/position.cpp
   src/weightless_torque.cpp
+  src/torque_control_arm.cpp
+  src/torque_control_base.cpp
+  src/torque_control_arm_base.cpp
 )
 target_link_libraries(robot_controllers
   ${catkin_LIBRARIES}
