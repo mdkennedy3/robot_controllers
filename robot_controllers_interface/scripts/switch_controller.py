@@ -117,10 +117,10 @@ def stopController(name):
 
 if __name__ == "__main__":
 
-  if len(sys.argv) < 3: 
+  if len(sys.argv) < 3:
     print("usage: switch_controller.py <base/arm/both> < <diff,torque>/ <position, velocity, torque> /<torque>> ")
     exit(-1)
-    
+
 
   rospy.init_node("switch_robot_controllers")
 
@@ -133,14 +133,14 @@ if __name__ == "__main__":
   if name == 'base':
     control_type = sys.argv[2]
     if not(control_type == 'diff' or control_type == 'torque'):
-      print("usage: switch_controller.py arm <diff,torque>")
+      print("usage: switch_controller.py base <diff,torque>")
       exit(-1)
 
     (success, result) = queryControllerState()
 
     if success:
       #Stop all running controllers
-      rospy.logwarn("WARNING Stopping all arm controllers, arm will drop down")
+      rospy.logwarn("WARNING Stopping all base controllers")
       for state in result.state:
         if state.state == state.RUNNING:
           for base_controller_name in BASE_CONTROLLER_NAMES:
@@ -159,7 +159,7 @@ if __name__ == "__main__":
   if name == 'arm':
     control_type = sys.argv[2]
     if not(control_type == 'position' or control_type == 'velocity' or control_type == 'torque'):
-      print("usage: switch_controller.py base <position, velocity, torque>")
+      print("usage: switch_controller.py arm <position, velocity, torque>")
       exit(-1)
 
     (success, result) = queryControllerState()
