@@ -39,6 +39,8 @@
  * Author: Michael Ferguson, Wim Meeussen
  */
 
+// Author: Dinesh Thakur, allow individual joint velocity control.
+
 #include <pluginlib/class_list_macros.h>
 #include <robot_controllers/velocity.h>
 
@@ -105,12 +107,12 @@ int VelocityController::init(ros::NodeHandle& nh, ControllerManager* manager)
     continuous_.push_back(j->isContinuous());
   }
 
-  command_efforts_.clear();
-  smoothed_efforts_.clear();
+  command_velocities_.clear();
+  smoothed_velocities_.clear();
   for (size_t i = 0; i < num_joints; ++i)
   {
-    command_efforts_.push_back(0.0);
-    smoothed_efforts_.push_back(0.0);
+    command_velocities_.push_back(0.0);
+    smoothed_velocities_.push_back(0.0);
   }
 
   // Subscribe to command
@@ -154,11 +156,11 @@ void VelocityController::update(const ros::Time& now, const ros::Duration& dt)
     return;  // Should never really hit this
 
   // Copy command to local to reduce lock contention
-  std::vector<double> command_efforts;
+  std::vector<double> command_velocities;
   ros::Time last_command_time;
   {
     boost::mutex::scoped_lock lock(mutex_);
-    command_efforts = command_efforts_;
+    command_velocities = command_velocities_;
     last_command_time = last_command_time_;
   }
 
@@ -166,37 +168,19 @@ void VelocityController::update(const ros::Time& now, const ros::Duration& dt)
 
   if (0) ROS_INFO_STREAM_NAMED("VelocityController", "VelocityController update " << now << " " << last_command_time);
 
-  if ((now - last_command_time) > ros::Duration(0.5))
+  bool command_active = (now - last_command_time) < ros::Duration(0.5);
+
+  if (!command_active)
   {
     manager_->requestStop(getName());
-  }
-  else if ((now - last_command_time) > ros::Duration(0.1))
-  {
-    for (size_t i = 0; i < num_joints; ++i)
-    {
-      smoothed_efforts_[i] += (0 - smoothed_efforts_[i]) * dt.toSec()/0.05;
-    }
   }
   else
   {
     for (size_t i = 0; i < num_joints; ++i)
     {
-      smoothed_efforts_[i] += (command_efforts[i] - smoothed_efforts_[i]) * dt.toSec()/0.05;
+      if(command_velocities[i] != std::numeric_limits<double>::max())
+        joints_[i]->setVelocity(command_velocities[i], 0.0); //TODO limit velocities to max/min
     }
-  }
-  if (num_joints == 7) {
-    if (1) ROS_INFO_STREAM_NAMED("VelocityController", "VelocityController setVelocity " <<
-      smoothed_efforts_[0] << " " <<
-      smoothed_efforts_[1] << " " <<
-      smoothed_efforts_[2] << " " <<
-      smoothed_efforts_[3] << " " <<
-      smoothed_efforts_[4] << " " <<
-      smoothed_efforts_[5] << " " <<
-      smoothed_efforts_[6]);
-  }
-  for (size_t i = 0; i < num_joints; ++i)
-  {
-    joints_[i]->setVelocity(smoothed_efforts_[i], 0.0);
   }
 }
 
@@ -219,11 +203,14 @@ void VelocityController::command(const trajectory_msgs::JointTrajectory::ConstPt
 
   size_t num_joints = joints_.size();
 
+  /*
   if (goal->joint_names.size() != num_joints)
   {
     ROS_ERROR("Trajectory goal size does not match controlled joints size.");
     return;
   }
+  */
+
   // Find mapping of joint names into message joint names
   std::vector<size_t> mapping(num_joints, std::string::npos);
   for (size_t j = 0; j < num_joints; ++j)
@@ -236,29 +223,30 @@ void VelocityController::command(const trajectory_msgs::JointTrajectory::ConstPt
         break;
       }
     }
+    /*
     if (mapping[j] == std::string::npos)
     {
-      ROS_ERROR("Trajectory goal does not match controlled joints");
+      ROS_WARN("Trajectory goal does not match controlled joints");
       return;
-    }
+    }*/
   }
 
-  std::vector<double> command_efforts(num_joints, 0.0);
+  std::vector<double> command_velocities(num_joints, std::numeric_limits<double>::max());
   for (size_t j = 0; j < num_joints; ++j)
   {
     if (0) ROS_INFO_STREAM_NAMED("VelocityController", "VelocityController point " << j << "->" << mapping[j]);
 
     if (mapping[j] != std::string::npos) {
-      double effort = goal->points[0].effort[mapping[j]];
-      if (!std::isfinite(effort)) effort = 0.0;
-      command_efforts[j] = effort;
+      double velocities = goal->points[0].velocities[mapping[j]];
+      if (!std::isfinite(velocities)) velocities = 0.0;
+      command_velocities[j] = velocities;
     }
   }
 
   ros::Time now(ros::Time::now());
   {
     boost::mutex::scoped_lock lock(mutex_);
-    command_efforts_ = command_efforts;
+    command_velocities_ = command_velocities;
     last_command_time_ = now;
   }
 

@@ -34,6 +34,7 @@
  *********************************************************************/
 
 // Author: Michael Ferguson
+// Author: Dinesh Thakur
 
 #ifndef ROBOT_CONTROLLERS_TORQUE_CONTROL_BASE_H
 #define ROBOT_CONTROLLERS_TORQUE_CONTROL_BASE_H

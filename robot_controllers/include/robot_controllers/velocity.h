@@ -139,8 +139,8 @@ private:
 
   boost::mutex mutex_;
 
-  std::vector<double> command_efforts_;
-  std::vector<double> smoothed_efforts_;
+  std::vector<double> command_velocities_;
+  std::vector<double> smoothed_velocities_;
 
   ros::Time last_command_time_;
 };

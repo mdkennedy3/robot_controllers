@@ -34,6 +34,8 @@
  *********************************************************************/
 
 /* Author: Michael Ferguson */
+// Author: Dinesh Thakur
+
 
 #include <pluginlib/class_list_macros.h>
 #include <robot_controllers/torque_control_arm_base.h>

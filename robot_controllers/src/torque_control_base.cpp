@@ -34,6 +34,7 @@
  *********************************************************************/
 
 // Author: Michael Ferguson
+// Author: Dinesh Thakur
 
 #include <angles/angles.h>
 #include <pluginlib/class_list_macros.h>
